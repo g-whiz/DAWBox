@@ -1,4 +1,4 @@
-FROM toolbx/ubuntu-toolbox:latest
+FROM quay.io/toolbx/ubuntu-toolbox:latest
 
 #Let ubuntu/debian know we're running in noninteractive mode. (No questions please)
 ARG DEBIAN_FRONTEND=noninteractive
