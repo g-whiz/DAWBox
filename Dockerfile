@@ -14,3 +14,5 @@ RUN dpkg --add-architecture i386; apt update -y; mkdir -pm755 /etc/apt/keyrings;
 RUN wget -c https://github.com/robbert-vdh/yabridge/releases/download/5.1.0/yabridge-5.1.0.tar.gz -O - | tar -C /usr/local/share -xz
 
 ENV PATH="${PATH}:/usr/local/share/yabridge"
+
+RUN mkdir /etc/skel/Prefixes
