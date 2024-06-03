@@ -1,6 +1,6 @@
 FROM quay.io/toolbx/ubuntu-toolbox:latest
 
-#Let ubuntu/debian know we're running in noninteractive mode. (No questions please)
+#Let ubuntu/debian know we're running in noninteractive mode. (Aka "No questions, please!")
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN lsb_release -a
@@ -16,3 +16,8 @@ RUN wget -c https://github.com/robbert-vdh/yabridge/releases/download/5.1.0/yabr
 ENV PATH="${PATH}:/usr/local/share/yabridge"
 
 RUN mkdir /etc/skel/Prefixes
+
+#Install pipewire to ensure connection to audio server.
+RUN apt install -y pipewire
+
+
