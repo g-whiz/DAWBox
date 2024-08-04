@@ -20,4 +20,5 @@ RUN mkdir /etc/skel/Prefixes
 #Install pipewire to ensure connection to audio server.
 RUN apt install -y pipewire
 
-
+#Install libxcb for bitwig.
+RUN apt install -y libxcb-imdkit1
