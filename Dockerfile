@@ -20,5 +20,8 @@ RUN mkdir /etc/skel/Prefixes
 #Install pipewire to ensure connection to audio server.
 RUN apt install -y pipewire
 
+# In case "pro audio" mode isn't activated or other debugging is needed.
+RUN apt install -y pavucontrol
+
 #Install libxcb for bitwig.
 RUN apt install -y libxcb-imdkit1
