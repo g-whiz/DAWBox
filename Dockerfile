@@ -11,6 +11,9 @@ RUN dpkg --add-architecture i386; apt update -y; mkdir -pm755 /etc/apt/keyrings;
 	wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources; \
 	apt update -y; apt upgrade -y; apt install -y --install-recommends winehq-staging;
 
+#Install winetricks + dependencies
+RUN apt install -y cabextract winetricks
+
 RUN wget -c https://github.com/robbert-vdh/yabridge/releases/download/5.1.0/yabridge-5.1.0.tar.gz -O - | tar -C /usr/local/share -xz
 
 ENV PATH="${PATH}:/usr/local/share/yabridge"
@@ -25,3 +28,4 @@ RUN apt install -y pavucontrol
 
 #Install libxcb for bitwig.
 RUN apt install -y libxcb-imdkit1
+
