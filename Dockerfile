@@ -29,3 +29,6 @@ RUN apt install -y pavucontrol
 #Install libxcb for bitwig.
 RUN apt install -y libxcb-imdkit1
 
+#Install FFMPEG and additional dependencies for audio processing scripts..
+RUN apt install -y ffmpeg pipx
+RUN pipx install ffmpeg-normalize 
