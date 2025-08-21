@@ -1,8 +1,6 @@
-# AudioBox Ubuntu Container for Distrobox
-
-## WHY?
-This is for personal use. It allows me to install bitwig or other DAWs that expect an
-Ubuntu system and comes with a preinstalled Yabridge compatibility layer for Windows
-VSTs. Use `yabridgectl` for more details.
-
+# DAWBox
+### What is it?
+ - Container image designed as a Distrobox environment for installing DAWs. 
+ - Useful for music production on atomic distros (eg. Aeon, Silverblue, etc.).
+ - Comes with Wine and yabridge pre-installed (for installing & using Windows VSTs).
 
