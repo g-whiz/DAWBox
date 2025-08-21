@@ -30,11 +30,11 @@ RUN strip build/*.so
 
 # copy build artifacts into release dir
 RUN mkdir lib
-RUN cp build/*.so build/*.exe lib
-RUN cp CHANGELOG.md README.md lib
+RUN mkdir bin
+RUN cp build/libyabridge*.so lib
+RUN cp build/yabridge-host.exe build/yabridge-host.exe.so bin
 
 # build yabridgectl and copy to export dir
-RUN mkdir bin
 RUN cd tools/yabridgectl; \
     cargo build --release; \
     strip target/release/yabridgectl; \
