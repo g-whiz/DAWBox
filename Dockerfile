@@ -16,12 +16,14 @@ RUN dpkg --add-architecture i386; \
     wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources; \
     apt-get update -y;
 
-# Install wine-staging v9.21
-RUN export version=9.21; \
-    export variant=staging; \
-    export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
-    export suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1")); \
-    apt-get install --install-recommends -y "wine-$variant-amd64"="$version~$codename$suffix" "wine-$variant-i386"="$version~$codename$suffix" "wine-$variant"="$version~$codename$suffix" "winehq-$variant"="$version~$codename$suffix"; 
+# Build args to specify branch & version of wine to install
+ARG WINE_VERSION=9.21
+ARG WINE_BRANCH=staging
+
+# Install wine
+RUN export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
+    export suffix=$(dpkg --compare-versions "$WINE_VERSION" ge 6.1 && ((dpkg --compare-versions "$WINE_VERSION" eq 6.17 && echo "-2") || echo "-1")); \
+    apt-get install --install-recommends -y "wine-$WINE_BRANCH-amd64"="$WINE_VERSION~$codename$suffix" "wine-$WINE_BRANCH-i386"="$WINE_VERSION~$codename$suffix" "wine-$WINE_BRANCH"="$WINE_VERSION~$codename$suffix" "winehq-$WINE_BRANCH"="$WINE_VERSION~$codename$suffix"; 
 
 # Prevent Wine from being udated
 RUN sudo apt-mark hold winehq-staging;
@@ -29,11 +31,9 @@ RUN sudo apt-mark hold winehq-staging;
 FROM base AS yabridge-build
 
 # install deps to build yabridge
-RUN export version=9.21; \
-    export variant=staging; \
-    export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
-    export suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1")); \
-    apt-get install --install-recommends -y "wine-$variant-dev"="$version~$codename$suffix"
+RUN export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
+    export suffix=$(dpkg --compare-versions "$WINE_VERSION" ge 6.1 && ((dpkg --compare-versions "$WINE_VERSION" eq 6.17 && echo "-2") || echo "-1")); \
+    apt-get install --install-recommends -y "wine-$WINE_BRANCH-dev"="$WINE_VERSION~$codename$suffix"
 
 RUN apt-get install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev cargo
 
@@ -41,7 +41,9 @@ RUN apt-get install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev cargo
 RUN mkdir prefix
 RUN export WINEPREFIX=/prefix
 
-RUN git clone https://github.com/robbert-vdh/yabridge.git yabridge
+# Build arg to specify yabridge branch/tag to checkout when building it. Defaults to HEAD of master branch.
+ARG YABRIDGE_VERSION=master
+RUN git clone --branch $YABRIDGE_VERSION https://github.com/robbert-vdh/yabridge.git yabridge
 WORKDIR /yabridge
 
 RUN meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000
