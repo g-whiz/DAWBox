@@ -35,7 +35,7 @@ RUN export version=9.21; \
     export suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1")); \
     apt-get install --install-recommends -y "wine-$variant-dev"="$version~$codename$suffix"
 
-RUN apt install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev cargo
+RUN apt-get install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev cargo
 
 # Build yabridge from source (current release is missing bug-fixes present in master)
 RUN mkdir prefix
@@ -64,7 +64,7 @@ RUN cd tools/yabridgectl; \
 FROM base AS final
 
 #Install winetricks + dependencies
-RUN apt install -y cabextract winetricks zenity
+RUN apt-get install -y cabextract winetricks zenity
 
 # todo: copy built yabridge from yabridge-build image
 RUN mkdir /usr/local/share/yabridge
@@ -72,7 +72,7 @@ COPY --from=yabridge-build /yabridge/lib/* /usr/lib
 COPY --from=yabridge-build /yabridge/bin/* /usr/bin
 
 #Install pipewire to ensure connection to audio server.
-RUN apt install -y pipewire
+RUN apt-get install -y pipewire
 
 ARG BITWIG_DEB_URL
 RUN if [[ -z "$BITWIG_DEB_URL" ]] ; then \
@@ -80,6 +80,6 @@ RUN if [[ -z "$BITWIG_DEB_URL" ]] ; then \
     else \
       cd /tmp; \
       curl -L "$BITWIG_DEB_URL" -o bitwig.deb; \
-      apt install -y --install-recommends ./bitwig.deb; \
+      apt-get install -y --install-recommends ./bitwig.deb; \
     fi
 
