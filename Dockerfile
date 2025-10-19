@@ -1,21 +1,41 @@
 # base image: common deps for final image and for building yabridge
 FROM quay.io/toolbx/ubuntu-toolbox:latest as base
+SHELL ["/bin/bash", "-c"]
 
 #Let ubuntu/debian know we're running in noninteractive mode. (Aka "No questions, please!")
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN lsb_release -a
 
-#Install wine-staging by setting up PPA
-RUN dpkg --add-architecture i386; apt update -y; mkdir -pm755 /etc/apt/keyrings; \
-	wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key; \
-	wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources; \
-	apt update -y; apt upgrade -y; apt install -y --install-recommends winehq-staging;
+# Set up wine-staging PPA
+RUN dpkg --add-architecture i386; \
+    apt-get update -y; \
+    apt-get upgrade -y; \
+    mkdir -pm755 /etc/apt/keyrings; \
+    wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key; \
+    wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources; \
+    apt-get update -y;
+
+# Install wine-staging v9.21
+RUN export version=9.21; \
+    export variant=staging; \
+    export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
+    export suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1")); \
+    apt-get install --install-recommends -y "wine-$variant-amd64"="$version~$codename$suffix" "wine-$variant-i386"="$version~$codename$suffix" "wine-$variant"="$version~$codename$suffix" "winehq-$variant"="$version~$codename$suffix"; 
+
+# Prevent Wine from being udated
+RUN sudo apt-mark hold winehq-staging;
 
 FROM base AS yabridge-build
 
 # install deps to build yabridge
-RUN apt install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev wine-staging-dev cargo
+RUN export version=9.21; \
+    export variant=staging; \
+    export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
+    export suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1")); \
+    apt-get install --install-recommends -y "wine-$variant-dev"="$version~$codename$suffix"
+
+RUN apt install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev cargo
 
 # Build yabridge from source (current release is missing bug-fixes present in master)
 RUN mkdir prefix
@@ -40,7 +60,6 @@ RUN cd tools/yabridgectl; \
     strip target/release/yabridgectl; \
     cp target/release/yabridgectl ../../bin;
 
-
 # Build final image
 FROM base AS final
 
@@ -52,7 +71,15 @@ RUN mkdir /usr/local/share/yabridge
 COPY --from=yabridge-build /yabridge/lib/* /usr/lib
 COPY --from=yabridge-build /yabridge/bin/* /usr/bin
 
-#ENV PATH="${PATH}:/usr/local/share/yabridge"
-
 #Install pipewire to ensure connection to audio server.
 RUN apt install -y pipewire
+
+ARG BITWIG_DEB_URL
+RUN if [[ -z "$BITWIG_DEB_URL" ]] ; then \
+      echo "Skipping Bitwig install (no URL provided)."; \
+    else \
+      cd /tmp; \
+      curl -L "$BITWIG_DEB_URL" -o bitwig.deb; \
+      apt install -y --install-recommends ./bitwig.deb; \
+    fi
+
