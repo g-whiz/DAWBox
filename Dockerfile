@@ -1,9 +1,17 @@
+# Build args to specify branch & version of wine to install
+ARG WINE_VERSION=9.21
+ARG WINE_BRANCH=staging
+
+#Let ubuntu/debian know we're running in noninteractive mode. (Aka "No questions, please!")
+ARG DEBIAN_FRONTEND=noninteractive
+
 # base image: common deps for final image and for building yabridge
 FROM quay.io/toolbx/ubuntu-toolbox:latest as base
 SHELL ["/bin/bash", "-c"]
 
-#Let ubuntu/debian know we're running in noninteractive mode. (Aka "No questions, please!")
-ARG DEBIAN_FRONTEND=noninteractive
+ARG WINE_VERSION
+ARG WINE_BRANCH
+ARG DEBIAN_FRONTEND
 
 RUN lsb_release -a
 
@@ -16,9 +24,7 @@ RUN dpkg --add-architecture i386; \
     wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources; \
     apt-get update -y;
 
-# Build args to specify branch & version of wine to install
-ARG WINE_VERSION=9.21
-ARG WINE_BRANCH=staging
+
 
 # Install wine
 RUN export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
@@ -28,7 +34,12 @@ RUN export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ {
 # Prevent Wine from being udated
 RUN sudo apt-mark hold winehq-staging;
 
+# Build yabridge from source (why: latest release is missing bug-fixes present in master)
 FROM base AS yabridge-build
+
+ARG WINE_VERSION
+ARG WINE_BRANCH
+ARG DEBIAN_FRONTEND
 
 # install deps to build yabridge
 RUN export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources); \
@@ -37,9 +48,6 @@ RUN export codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ {
 
 RUN apt-get install -y gcc meson pkg-config libxcb1-dev libdbus-1-dev cargo
 
-# Build yabridge from source (current release is missing bug-fixes present in master)
-RUN mkdir prefix
-RUN export WINEPREFIX=/prefix
 
 # Build arg to specify yabridge branch/tag to checkout when building it. Defaults to HEAD of master branch.
 ARG YABRIDGE_VERSION=master
@@ -62,8 +70,10 @@ RUN cd tools/yabridgectl; \
     strip target/release/yabridgectl; \
     cp target/release/yabridgectl ../../bin;
 
-# Build final image
+# Assemble final image using the yabridge binaries that we just built
 FROM base AS final
+
+ARG DEBIAN_FRONTEND
 
 #Install winetricks + dependencies
 RUN apt-get install -y cabextract winetricks zenity
