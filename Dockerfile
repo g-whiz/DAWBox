@@ -74,12 +74,14 @@ COPY --from=yabridge-build /yabridge/bin/* /usr/bin
 #Install pipewire to ensure connection to audio server.
 RUN apt-get install -y pipewire
 
-ARG BITWIG_DEB_URL
-RUN if [[ -z "$BITWIG_DEB_URL" ]] ; then \
-      echo "Skipping Bitwig install (no URL provided)."; \
+ARG BITWIG_VERSION
+RUN if [[ -z "$BITWIG_VERSION" ]] ; then \
+      echo "Skipping Bitwig install (no version specified)."; \
     else \
       cd /tmp; \
+      export BITWIG_DEB_URL=$(printf "https://www.bitwig.com/dl/Bitwig%%20Studio/%s/installer_linux/" $BITWIG_VERSION); \
       curl -L "$BITWIG_DEB_URL" -o bitwig.deb; \
       apt-get install -y --install-recommends ./bitwig.deb; \
+      rm bitwig.deb; \
     fi
 
